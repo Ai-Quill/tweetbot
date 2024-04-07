@@ -13,28 +13,41 @@ from typing import Annotated, Sequence, TypedDict, List
 from langchain_community.document_loaders import WebBaseLoader
 # Import StateGraph from langgraph.graph
 from langgraph.graph import StateGraph, END
+import streamlit_shadcn_ui as ui
+from streamlit.components.v1 import html
+import  clipboard
+
 
 def main():
-    st.title("Tweet Generator Supervisor and Agents Workflow 🐦")
-
+    with open( "style.css" ) as css:
+        st.markdown( f'<style>{css.read()}</style>' , unsafe_allow_html= True)
+   
+    st.title("Tweet Generator  🐦")
+    st.markdown("***")
+    st.markdown("#Workflow: Keyword Extractor --> Trend Analyzer --> Engagement Optimizer")
+    st.markdown("***")
     # Add a sidebar for model selection
     OPENAI_MODEL = st.sidebar.selectbox(
         "Select Model",
         ["gpt-4-turbo-preview", "gpt-3.5-turbo"]
     )
-
+    api_key = ""
     if 'api_key' not in st.session_state:
-        st.session_state['api_key'] = st.sidebar.text_input("Enter your OpenAI API Key", type="password")
+        api_key = st.sidebar.text_input("Enter your OpenAI API Key", type="password")
+        st.session_state['api_key'] = api_key
     else:
-        st.session_state['api_key'] = st.sidebar.text_input("Enter your OpenAI API Key", type="password", value=st.session_state['api_key'])
-
+        api_key = st.session_state['api_key']
+        st.session_state['api_key'] = st.sidebar.text_input("Enter your OpenAI API Key", type="password", value=api_key)
+    
     if st.session_state['api_key']:
         os.environ["OPENAI_API_KEY"] = st.session_state['api_key']
 
     tweet_topic = st.text_input("Enter the topic for the tweet:")
-
+    st.markdown("")
+    trigger_btn = ui.button(text="Generate Tweet", key="trigger_btn")
     # Run the workflow
-    if st.button("Generate Tweet"):
+    #if st.button("Generate Tweet"):
+    if trigger_btn:
         with st.spinner("Generating Tweet..."):
             #for chundk tweet
             def chunk_content_for_tweets(content):
@@ -69,7 +82,7 @@ def main():
 
                 st.markdown("Copy and paste these into your Twitter feed!")
             
-            llm = ChatOpenAI(model=OPENAI_MODEL)
+            llm = ChatOpenAI(model=OPENAI_MODEL,openai_api_key=api_key )
 
             def create_agent(llm: ChatOpenAI, tools: list, system_prompt: str):
                 prompt = ChatPromptTemplate.from_messages([
@@ -83,10 +96,10 @@ def main():
             @tool("Keyword_Extractor")
             def extract_keywords(content: str) -> str:
                 """Extract relevant keywords from the given content."""
-                chat = ChatOpenAI()
+                chat = ChatOpenAI(openai_api_key=api_key)
                 messages = [
                     SystemMessage(
-                        content="You are a keyword extraction expert. Your task is to identify the most relevant keywords from the given content."
+                        content="You are a keyword extraction expert. Your task is to identify the most relevant keywords from the given content.Make sure that you come back with the list of quality keywords, present the result with bullet points."
                     ),
                     HumanMessage(
                         content=content
@@ -97,8 +110,8 @@ def main():
 
             @tool("Trend_Analyzer")
             def trend_analyzer(topic: str) -> str:
-                """Analyze current trends related to the topic to inspire the tweet content."""
-                chat = ChatOpenAI()
+                """Analyze current trends related to the topic to inspire the tweet content. Making sure you have the list of the ponts and present with bullet points."""
+                chat = ChatOpenAI(openai_api_key=api_key)               
                 messages = [
                     SystemMessage(content="Analyze current trends related to the topic."),
                     HumanMessage(content=topic),
@@ -108,8 +121,8 @@ def main():
 
             @tool("Engagement_Optimizer")
             def engagement_optimizer(content: str) -> str:
-                """Optimize the tweet for maximum engagement based on content trends and best practices."""
-                chat = ChatOpenAI()
+                """Optimize the tweet for maximum engagement based on content trends and best practices. It should be human-friendly and engaging. Make sure you present the tweet in a way that it is engaging and human-friendly, casual  intriguing and engaging."""
+                chat = ChatOpenAI(openai_api_key=api_key)
                 messages = [
                     SystemMessage(content="Optimize the tweet for engagement."),
                     HumanMessage(content=content),
@@ -131,7 +144,7 @@ def main():
                 prompt = "You are responsible for optimizing the tweet for engagement."
                 return create_agent(llm, [engagement_optimizer], prompt)
 
-            KEYWORD_EXTRACTOR = "KEYWORD_EXTRACTOR"
+            KEYWORD_EXTRACTOR = "Keyword_Extractor"
             TREND_ANALYZER = "Trend_Analyzer"
             ENGAGEMENT_OPTIMIZER = "Engagement_Optimizer"
             SUPERVISOR = "Supervisor"
@@ -271,31 +284,44 @@ def main():
                             if isinstance(message, HumanMessage):  # Ensure the object is an instance of HumanMessage
                                 # Display the content of the message in markdown format
                                 st.markdown(f"**{key}:** {message.content}")
+                                st.markdown("___")
                                 if key == 'Engagement_Optimizer':  # Check if this is the final tweet
                                     final_tweet = message.content  # Save the final tweet content for later display
 
                                 # Display the final tweet in a card format after the loop
                                 if final_tweet:
-                                    col1, col2, col3 = st.columns([1, 2, 1])
-                                    with col2:
-                                        st.markdown(f"""
-                                        <style>
-                                            .tweet-card {{
-                                                border: 2px solid #1DA1F2;
-                                                border-radius: 15px;
-                                                padding: 20px;
-                                                margin-top: 10px;
-                                                background-color: #F5F8FA;
-                                            }}
-                                            .tweet-text {{
-                                                font-family: Arial, sans-serif;
-                                                font-size: 16px;
-                                            }}
-                                        </style>
-                                        <div class="tweet-card">
-                                            <p class="tweet-text">{final_tweet}</p>
-                                        </div>
-                                        """, unsafe_allow_html=True)
+                                    # HTML template for the tweet card
+                                    tweet_card_html = f"""
+                                    <style>
+                                    .tweet-card {{
+                                        border: 2px solid #1DA1F2;
+                                        border-radius: 15px;
+                                        padding: 20px;
+                                        margin-top: 10px;
+                                        background-color: #F5F8FA;
+                                        height: auto;
+                                    }}
+                                    .tweet-text {{
+                                        font-size: 16px;
+                                    }}
+                                    </style>
+                                    <div class="tweet-card rounded-xl px-2 ">
+                                        <h2>Final Tweet</h2>
+                                        <p class="tweet-text">{final_tweet}</p>
+                                    </div>
+                                    """
+                                    # Use html to render the HTML tweet card
+                                    
+                                    # Add a copy-to-clipboard button for the final tweet
+                                # if 'copy_clicked' not in st.session_state:
+                                #     st.session_state.copy_clicked = False
+
+                                # if st.button('📋Copy Tweet'):
+                                #     st.session_state.copy_clicked = True
+
+                                # if st.session_state.copy_clicked:
+                                #     clipboard.copy(final_tweet)
+                                #     st.markdown('Tweet copied to clipboard!')
 
 if __name__ == "__main__":
     main()
