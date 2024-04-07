@@ -1,0 +1,12 @@
+numpy>=1.18
+tweepy>=4.12
+streamlit>=1.15
+openai>=1.6
+streamlit-analytics>=0.4
+langchain_community
+langchain-openai 
+langchain_core
+langchain 
+langgraph 
+beautifulsoup4
+langchain-anthropic
