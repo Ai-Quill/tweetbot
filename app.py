@@ -18,7 +18,35 @@ from streamlit.components.v1 import html
 import  clipboard
 
 
+
 def main():
+    footer="""<style>
+        a:link , a:visited{
+        color: blue;
+        background-color: transparent;
+        text-decoration: underline;
+        }
+
+        a:hover,  a:active {
+        color: red;
+        background-color: transparent;
+        text-decoration: underline;
+        }
+
+        .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: white;
+        color: black;
+        text-align: center;
+        }
+        </style>
+        <div class="footer">
+        <p>Developed with ❤ by <a style='display: block; text-align: center;' href="https://twitter.com/tuantruong/" target="_blank">Tuan Truong</a></p>
+        </div>
+        """
     with open( "style.css" ) as css:
         st.markdown( f'<style>{css.read()}</style>' , unsafe_allow_html= True)
    
@@ -31,6 +59,7 @@ def main():
         "Select Model",
         ["gpt-4-turbo-preview", "gpt-3.5-turbo"]
     )
+  
     api_key = ""
     if 'api_key' not in st.session_state:
         api_key = st.sidebar.text_input("Enter your OpenAI API Key", type="password")
@@ -43,6 +72,13 @@ def main():
         os.environ["OPENAI_API_KEY"] = st.session_state['api_key']
 
     tweet_topic = st.text_input("Enter the topic for the tweet:")
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown(
+            '<h5>Made with ❤ in &nbsp<img src="https://streamlit.io/images/brand/streamlit-mark-color.png" alt="Streamlit logo" height="16">&nbsp by <a href="https://twitter.com/tuantruong">@tuantruong</a></h5>',
+            unsafe_allow_html=True,
+        )
+  
     st.markdown("")
     trigger_btn = ui.button(text="Generate Tweet", key="trigger_btn")
     # Run the workflow
@@ -322,6 +358,6 @@ def main():
                                 # if st.session_state.copy_clicked:
                                 #     clipboard.copy(final_tweet)
                                 #     st.markdown('Tweet copied to clipboard!')
-
+    
 if __name__ == "__main__":
     main()
